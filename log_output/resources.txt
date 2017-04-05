@@ -1,0 +1,10 @@
+/facts/acron2.txt
+/shuttle/missions/sts-missions-flown.txt
+/shuttle/missions/sts-71/images/captions.txt
+/shuttle/missions/sts-70/sts-70-press-kit.txt
+/htbin/cdt_clock.pl
+/shuttle/missions/51-l/mission-51-l.html
+/shuttle/missions/sts-69/sts-69-info.html
+/shuttle/missions/manifest.txt
+/statistics/1995/Jun/Jun95_archive.html
+/shuttle/missions/sts-missions.bak
