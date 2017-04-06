@@ -23,7 +23,6 @@ verbose = sys.argv[6]
 
 def read_clean_preprocess(file):
     
-    
     if sys.argv[6]:
         print "Reading and preprocessing data started at" + " " + str(datetime.datetime.now())
 
@@ -82,14 +81,14 @@ get_hosts(df)
 
 def get_resources(df):
     
-    # This is a dictionary based method that faciliatates fast generation of the output.
+    # This is a dictionary based method that allows fast execution.
     resource_array = {}
     
     ##  These are lists that are fast to access to get a given value
     resource = np.array(df['resource'])
     byte = np.array(df['byte'], dtype = 'int64')
 
-    # Loop over the resources and populate the resource_array accordingly.
+    # Loop over all the resources in the resource list and populate the resource_array accordingly.
     for n in range(0, len(resource)):
         if resource[n] not in resource_array:
             resource_array[resource[n]] = byte[n]
@@ -97,10 +96,11 @@ def get_resources(df):
         else:
             resource_array[resource[n]] += byte[n]
 
-
+    # resource_array is a dictionary and can't be sorted. We make a list of tuples and sort it based on the byte values
     bandwidth_consumption = [(k, v) for k, v in resource_array.iteritems()]
     bandwidth_consumption.sort(key = itemgetter(1), reverse = True)
     
+    # output
     with open(sys.argv[3], "w") as resources_output:
         if len(bandwidth_consumption) > 10:
             resources_output.write(''.join(str(t[0]) + '\n' for t in bandwidth_consumption[0:10]))
@@ -109,7 +109,7 @@ def get_resources(df):
 
     if sys.argv[6]:
         print 'resources.txt was written at ' + str(datetime.datetime.now())
-    #return bandwidth_consumption
+    #return bandwidth_consumption, if you want to look at.
 
 # Run Feature-2 using df as a solo input
 get_resources(df)
@@ -136,7 +136,7 @@ def get_hours(df):
         clicks_at_every_second[index_of_click_date] += total_clicks_per_timestamp[n][1]
 
 
-    # Map clicks_at_every_second into hourly_cumulative_clicks
+    # Map clicks_at_every_second into hourly_cumulative_clicks. We use a simple formula along with different arrays in order to quickly and efficiently compute the hourly_cumulative_clicks.
     clicks_at_every_second = np.array(clicks_at_every_second)
 
     hourly_cumulative_clicks = [0] * len(date_range_by_second)
@@ -144,12 +144,13 @@ def get_hours(df):
 
 
     for n in range(1, len(hourly_cumulative_clicks)):
-        hourly_cumulative_clicks[n] = hourly_cumulative_clicks[n-1] - clicks_at_every_second[n-1] + clicks_at_every_second[n+3599]
+        hourly_cumulative_clicks[n] = hourly_cumulative_clicks[n-1] - clicks_at_every_second[n-1] + clicks_at_every_second[n+3599] # The most critical formula for feature-3
 
-
+    # Most straightforward way to sort two lists together, zip and sort.
     hourly_cumulative_clicks = zip(date_range_by_second, hourly_cumulative_clicks)
     hourly_cumulative_clicks.sort(key = itemgetter(1), reverse = True)
 
+    # output
     with open(sys.argv[4], "w") as hours_output:
         for n in range(0, 10):
             line = hourly_cumulative_clicks[n][0]
@@ -167,6 +168,8 @@ get_hours(df)
 
 # Feature-4
 
+
+# This is a helper function for converting a dictionary to a list and then sorting the list. This function helps keep the number of lines in phase_1_blocked_assessment under control.
 def process_dict_into_sorted_lists(input_dict, sorting_index):
     
     output_list = [(k, v) for k, v in input_dict.iteritems()]
@@ -175,21 +178,23 @@ def process_dict_into_sorted_lists(input_dict, sorting_index):
     return output_array
 
 
+# This is phase-1 of feature-4. The goal of this phase is to locate and output any case in which the SAME host attemped to LOGIN and FAILED for THREE CONSECUTIVE times in 20 seconds.
 def phase_1_blocked_assessment(df):
     
-    ## used to be called collect_three_cons_failed_attempts_same_host_within_twenty_sec
+    # All right, we only need to focus on cases of users attempting to ligin, so, we subset the input dataframe to include only these cases.
     login_df = df[(df['resource'] ==  '/login')][['host', 'timestamps', 'http']]
     
-    ## We need to work with arrays cause it is much faster than working with dataframes
+    # We need to work with arrays cause it is much faster than working with dataframes. The following 4-arrays have similar indices to similar cases. This enables us to check several conditions simultaneously.
     http_array = np.array(login_df['http'], dtype = int)
     host_array = np.array(login_df['host'], dtype = str)
     timestamps_array = np.array(login_df['timestamps'], dtype = 'datetime64[ns]')
-    timestamps_tsl_array = np.array(login_df['timestamps'] + pd.Timedelta('20 seconds'), dtype = 'datetime64[ns]')
+    timestamps_tsl_array = np.array(login_df['timestamps'] + pd.Timedelta('20 seconds'), dtype = 'datetime64[ns]') # tsl stands for 20 seconds limit!
     
-    ## We need empty dictionaries to retrieve the most important information
+    # We need empty dictionaries to retrieve the most important information; the host and the timestamp of his/her last/third consecutive failed login attempt in 20 seconds.
     three_consecutive_failures_host = {}
     third_consecutive_failures_timestamps = {}
     
+    # We will crawl around every case of login and evaluate against all the conditions.
     for n in range(0, login_df.shape[0]-3):
         if (http_array[n] != 200 and
             http_array[n+1] != 200 and
@@ -201,10 +206,11 @@ def phase_1_blocked_assessment(df):
             three_consecutive_failures_host[n+2] = host_array[n+2]
             third_consecutive_failures_timestamps[n+2] = timestamps_array[n+2]
 
-    ## Now, we process the dictionaries in order to have a neat output
+    # Now, we process the dictionaries using the helper function defined above in order to have a neat output
     host = process_dict_into_sorted_lists(three_consecutive_failures_host, 0)
     timestamps = process_dict_into_sorted_lists(third_consecutive_failures_timestamps, 0)
     
+    # output
     phase_1_output = pd.DataFrame({'host': host,'timestamps': timestamps })
     
     if sys.argv[6]:
@@ -219,19 +225,22 @@ phase_1_output = phase_1_blocked_assessment(df)
 
 def phase_2_blocked_assessment(df, phase_1_output_df):
     
-    ## Lists for efficient comparison
+    # Lists for efficient comparison
     timestamps_array = phase_1_output_df['timestamps']
     host_array = phase_1_output_df['host']
     
-    ## Initialize a dataframe for the sought after cases, we Initialize manually on the first case and exclude it from the for loop, sort of bottom-up approach!
-    use_attempt_five_min = df[(df["host"] ==  host_array[0]) & 
+    
+    # Initialize a dataframe for the sought after cases, we Initialize manually on the first case and exclude it from the for loop, sort of bottom-up approach! T
+    use_attempt_five_min = df[(df["host"] ==  host_array[0]) &
                            (df['timestamps'] > timestamps_array[0]) &
                            (df['timestamps'] <= timestamps_array[0] + pd.Timedelta('300 seconds'))]
     
-    ## initiate sets to faciliate search
+    # initiate empty sets to faciliate search, we won't use these sets for anything other than for searching and making sure we don't report similar breaches over and over again, so, instead of dictionaries, we just use sets.
     host_set = set(use_attempt_five_min["host"])
     timestamps_set = set(use_attempt_five_min['timestamps'])
     
+    
+    # Time for action, we now can use information we obtained from phase-1 in order to catch breaches, all of them, failed or successful login, login attempt of watching a movie, whatever the breach is, it can be retrieved from the original df using what we know now.
     for n in range(1, phase_1_output_df.shape[0]):
         
         ## We don't want to report redundant cases or repeat cases
