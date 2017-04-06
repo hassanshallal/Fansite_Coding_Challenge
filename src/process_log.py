@@ -6,7 +6,10 @@ import datetime
 from operator import itemgetter, attrgetter
 import sys
 
+
+
 # Define command line arguments
+
 input_file = sys.argv[1]
 host_output = sys.argv[2]
 resources_output = sys.argv[3]
@@ -15,11 +18,14 @@ blocked_output = sys.argv[5]
 verbose = sys.argv[6]
 
 
+
 # Preprocessing
 
 def read_clean_preprocess(file):
     
-    print "Reading and preprocessing data started at" + " " + str(datetime.datetime.now())
+    
+    if sys.argv[6]:
+        print "Reading and preprocessing data started at" + " " + str(datetime.datetime.now())
 
     # Read the input and specify " " as a separator between the different fields
     df = pd.read_table(file, header = None, sep = " ", error_bad_lines = False, warn_bad_lines = False)
@@ -36,21 +42,25 @@ def read_clean_preprocess(file):
     df = df.join(df[5].str.split(' ', 1, expand = True).rename(columns={0:'is_sent', 1:'resource_protocol'}))
     df = df.join(df['resource_protocol'].str.split(' ', 1, expand = True).rename(columns={0:'resource1', 1:'protocol'}))
     
-    #Give final names
+    # Give final names to the columns, these names will be used throughout the rest of the implementation
     df.columns = ['host', 'datetime', 'timezone', 'total_resource', "http", 'byte', 'is_sent', 'resource_protocol', 'resource', 'protocol']
     
-    # Add a timestamp column
+    # Add a very critical timestamp column
     df['timestamps'] = pd.Series(pd.to_datetime(df['datetime'], format='%d/%b/%Y:%H:%M:%S'), index = df.index)
-    
-    print 'Cleaning and organizing the input were done at ' + str(datetime.datetime.now())
+
+    # Print undates in case the user checks verbose as True in the run.sh script
+    if sys.argv[6]:
+        print 'Cleaning and organizing the input were done at ' + str(datetime.datetime.now())
     return df
     
 
+# Run the preprocessing and name the output as df
 df = read_clean_preprocess(input_file)
 
 
 
 # Feature-1: hosts
+
 def get_hosts(df):
     hosts = df['host'].value_counts()
     if len(hosts) > 10:
@@ -63,7 +73,9 @@ def get_hosts(df):
         print 'hosts.txt was written at ' + str(datetime.datetime.now())
 
 
+# Run Feature-1 using df as a solo input
 get_hosts(df)
+
 
 
 # Feature-2: resources
@@ -99,7 +111,10 @@ def get_resources(df):
         print 'resources.txt was written at ' + str(datetime.datetime.now())
     #return bandwidth_consumption
 
+# Run Feature-2 using df as a solo input
 get_resources(df)
+
+
 
 # Feature-3: hours
 
@@ -145,7 +160,9 @@ def get_hours(df):
     if sys.argv[6]:
         print 'hours.txt was written at ' + str(datetime.datetime.now())
 
+# Run Feature-3 using df as a solo input
 get_hours(df)
+
 
 
 # Feature-4
@@ -194,6 +211,8 @@ def phase_1_blocked_assessment(df):
         print 'Phase-1 blocked assessment is completed at ' + str(datetime.datetime.now()) + ' and the dimensions of the phase_1_output are ' + str(phase_1_output.shape[0])
     return phase_1_output
 
+
+# Run phase-1 of Feature-4 using df as a solo input
 phase_1_output = phase_1_blocked_assessment(df)
 
 
@@ -247,4 +266,5 @@ def phase_2_blocked_assessment(df, phase_1_output_df):
         print 'blocked.txt was  written at ' + str(datetime.datetime.now()) + ' and the number of detected cases is ' + str(use_attempt_five_min.shape[0])
     #return use_attempt_five_min
 
+# Run phase-2 of Feature-4 using df and the output of phase-1
 phase_2_blocked_assessment(df, phase_1_output)
