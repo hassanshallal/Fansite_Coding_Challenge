@@ -30,22 +30,22 @@ def read_clean_preprocess(file):
     df = pd.read_table(file, header = None, sep = " ", error_bad_lines = False, warn_bad_lines = False)
     
     # Drop irrelevant columns
-    df = df.drop(1, axis=1)
-    df = df.drop(2, axis=1)
+    df = df.drop(1, axis = 1)
+    df = df.drop(2, axis = 1)
     
     # Do some cleaning
     df[3] = df[3].str.replace('[', '')
     df[4] = df[4].str.replace(']', '')
     
     # Split total resource into is_sent, resource, and protocol
-    df = df.join(df[5].str.split(' ', 1, expand = True).rename(columns={0:'is_sent', 1:'resource_protocol'}))
-    df = df.join(df['resource_protocol'].str.split(' ', 1, expand = True).rename(columns={0:'resource1', 1:'protocol'}))
+    df = df.join(df[5].str.split(' ', 1, expand = True).rename(columns = {0:'is_sent', 1:'resource_protocol'}))
+    df = df.join(df['resource_protocol'].str.split(' ', 1, expand = True).rename(columns = {0:'resource1', 1:'protocol'}))
     
     # Give final names to the columns, these names will be used throughout the rest of the implementation
     df.columns = ['host', 'datetime', 'timezone', 'total_resource', "http", 'byte', 'is_sent', 'resource_protocol', 'resource', 'protocol']
     
     # Add a very critical timestamp column
-    df['timestamps'] = pd.Series(pd.to_datetime(df['datetime'], format='%d/%b/%Y:%H:%M:%S'), index = df.index)
+    df['timestamps'] = pd.Series(pd.to_datetime(df['datetime'], format ='%d/%b/%Y:%H:%M:%S'), index = df.index)
 
     # Print undates in case the user checks verbose as True in the run.sh script
     if sys.argv[6]:
@@ -64,9 +64,9 @@ def get_hosts(df):
     hosts = df['host'].value_counts()
     if len(hosts) > 10:
         hosts1 = hosts[0:10]
-        hosts1.to_csv(sys.argv[2], header = None, index = True, sep=',', mode='w')
+        hosts1.to_csv(sys.argv[2], header = None, index = True, sep = ',', mode = 'w')
     else:
-        hosts.to_csv(sys.argv[2], header = None, index = True, sep=',', mode='w')
+        hosts.to_csv(sys.argv[2], header = None, index = True, sep = ',', mode = 'w')
     
     if sys.argv[6]:
         print 'hosts.txt was written at ' + str(datetime.datetime.now())
@@ -127,7 +127,7 @@ def get_hours(df):
 
 
     # Map total_clicks_per_timestamp into clicks_at_every_second including periods of inactivity
-    date_range_by_second = pd.date_range(start = total_clicks_per_timestamp[0][0], end = total_clicks_per_timestamp[len(total_clicks_per_timestamp)-1][0], freq='S')
+    date_range_by_second = pd.date_range(start = total_clicks_per_timestamp[0][0], end = total_clicks_per_timestamp[len(total_clicks_per_timestamp)-1][0], freq = 'S')
     clicks_at_every_second = [0] * len(date_range_by_second)
     clicks_at_every_second.extend([0] * (3599))
 
@@ -140,7 +140,7 @@ def get_hours(df):
     clicks_at_every_second = np.array(clicks_at_every_second)
 
     hourly_cumulative_clicks = [0] * len(date_range_by_second)
-    hourly_cumulative_clicks[0] = np.sum(clicks_at_every_second[0:3599], axis=0)
+    hourly_cumulative_clicks[0] = np.sum(clicks_at_every_second[0:3599], axis = 0)
 
 
     for n in range(1, len(hourly_cumulative_clicks)):
@@ -182,7 +182,7 @@ def process_dict_into_sorted_lists(input_dict, sorting_index):
 def phase_1_blocked_assessment(df):
     
     # All right, we only need to focus on cases of users attempting to ligin, so, we subset the input dataframe to include only these cases.
-    login_df = df[(df['resource'] ==  '/login')][['host', 'timestamps', 'http']]
+    login_df = df[(df['resource'] == '/login')][['host', 'timestamps', 'http']]
     
     # We need to work with arrays cause it is much faster than working with dataframes. The following 4-arrays have similar indices to similar cases. This enables us to check several conditions simultaneously.
     http_array = np.array(login_df['http'], dtype = int)
