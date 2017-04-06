@@ -78,9 +78,9 @@ Feature-4 is expected to detect whether someone who failed to login from the sam
 
 Feature-4 was implemented in two phases:
 
-    **Phase-1**: phase_1_blocked_assessment function locates and outputs any case in which the same host attemped to login and failed for three consecutive times in an interval of 20 seconds. 
+    Phase-1: phase_1_blocked_assessment function locates and outputs any case in which the same host attemped to login and failed for three consecutive times in an interval of 20 seconds. 
 
-    **Phase-2**: using the output of phase-1, phase_2_blocked_assessment function reports any breach in which a case that was detected in phase-1 was not blocked  by the site in the next five minutes.
+    Phase-2: using the output of phase-1, phase_2_blocked_assessment function reports any breach in which a case that was detected in phase-1 was not blocked  by the site in the next five minutes.
 
 Feature-4 was the slowest among all the implemented features and it processed the input of more than 27 days in less than 10 minutes.
 
