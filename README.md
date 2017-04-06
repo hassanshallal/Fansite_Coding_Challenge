@@ -13,6 +13,12 @@ This is my submission to the Insight coding challenge described in details here:
 
 The input log.txt can be dowanloaded from here: https://drive.google.com/file/d/0B7-XWjN4ezogbUh6bUl1cV82Tnc/view
 
+Please find the python implementation in the src directory.
+
+I adopted functional, rather than modular, programming because the available modules are very efficient in terms of time and space and provided me with almost all the tools I needed to implement the four features of the challenge. Furthermore, this is my first time using Python alone to complete a data engineering project from A to Z, modular programming is a very powerful aspect of python that I look forward to leveraging from in other more demanding situations.
+
+There are always tradeoffs between the quality, quantity, variety, responsiveness, and price/cost. The current solution strived to manage these tradeoffs. I will share the technical feedback I will recieve from the Insight team in regrads to how the current solution measures in terms of delivering the business goals of the challenge.
+
 ## Necessary libraries
 
 The current data pipeline was implemented in python and relied heavily on the following libraries:
